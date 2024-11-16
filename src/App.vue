@@ -13,23 +13,27 @@
         {{ option.label }}
       </label>
     </div>
-    <transition-group name="fade" tag="ul" class="task-list">
+    <transition-group name="list" tag="ul" class="task-list">
       <TodoList
-        :tasks="filteredTasks"
+        v-for="task in filteredTasks"
+        :key="task.id"
+        :task="task"
         @delete-task="deleteTask"
         @toggle-task="toggleTaskCompletion"
         @update-priority="updateTaskPriority"
+        @update-title="updateTaskTitle"
       />
     </transition-group>
+
     <p class="task-summary">Pending Tasks: {{ pendingTaskCount }}</p>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, nextTick } from "vue";
+import { defineComponent, ref, computed, watch, nextTick } from "vue";
 import AddTask from "./components/AddTask.vue";
 import TodoList from "./components/TodoList.vue";
-import type { Task } from "./types";
+import { type Task } from "./types";
 
 export default defineComponent({
   name: "App",
@@ -48,12 +52,14 @@ export default defineComponent({
 
     const deleteTask = (id: number) => {
       tasks.value = tasks.value.filter((task) => task.id !== id);
+      console.log("Task Deleted id is", id.toString());
     };
 
     const toggleTaskCompletion = (id: number) => {
       const task = tasks.value.find((t) => t.id === id);
       if (task) {
         task.completed = !task.completed;
+        console.log("Task Completed id is", id.toString());
       }
     };
 
@@ -61,6 +67,15 @@ export default defineComponent({
       const task = tasks.value.find((t) => t.id === id);
       if (task) {
         task.priority = newPriority;
+        console.log("Task Priority changed id is", id.toString(), "new priority", newPriority.toString());
+      }
+    };
+
+    const updateTaskTitle = (id: number, newTitle: string) => {
+      const task = tasks.value.find((t) => t.id === id);
+      if (task) {
+        task.title = newTitle;
+        console.log("Task Title changed id is", id.toString(), "new priority", newTitle);
       }
     };
 
@@ -83,6 +98,14 @@ export default defineComponent({
       tasks.value.filter((task) => !task.completed).length
     );
 
+    watch(
+      tasks,
+      (newTasks) => {
+        console.log("General Task list updated:", newTasks.length);
+      },
+      { deep: true }
+    );
+
     const filterOptions = [
       { label: "All", value: "all" },
       { label: "Completed", value: "completed" },
@@ -96,6 +119,7 @@ export default defineComponent({
       deleteTask,
       toggleTaskCompletion,
       updateTaskPriority,
+      updateTaskTitle,
       filteredTasks,
       pendingTaskCount,
       filterOptions,
@@ -136,19 +160,8 @@ h1 {
 }
 
 .filter-button.active {
-  font-weight: bold;
-}
-
-.filter-button:nth-child(1).active {
-  color: #007bff;
-}
-
-.filter-button:nth-child(2).active {
-  color: #28a745;
-}
-
-.filter-button:nth-child(3).active {
-  color: #dc3545;
+  background-color: #007bff;
+  color: white;
 }
 
 .task-summary {
@@ -156,14 +169,18 @@ h1 {
   font-size: 1.2rem;
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+.list-enter-active,
+.list-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.list-enter-from {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-20px);
+}
+
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
 }
 </style>
